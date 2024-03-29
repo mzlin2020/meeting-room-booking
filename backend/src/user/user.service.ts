@@ -9,6 +9,9 @@ import { Permission } from './entities/permission.entity';
 import { Role } from './entities/role.entity';
 import { LoginUserDto } from './dto/login-user.dto';
 import { LoginUserVo } from './vo/login-user.vo';
+import { UserDetailVo } from './vo/user-info.vo';
+import { updateUserPasswordDto } from './dto/update-user-password.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UserService {
@@ -127,7 +130,6 @@ export class UserService {
     if (user.password !== md5(loginUserDto.password)) {
       throw new HttpException('密码错误', HttpStatus.BAD_REQUEST);
     }
-    console.log(user);
 
     const vo = new LoginUserVo();
     vo.userInfo = {
@@ -177,5 +179,81 @@ export class UserService {
         return arr;
       }, []),
     };
+  }
+
+  async findUserDetailById(userId: number) {
+    const user = await this.userRepository.findOne({
+      where: {
+        id: userId,
+      },
+    });
+
+    const vo = new UserDetailVo();
+    vo.id = user.id;
+    vo.email = user.email;
+    vo.username = user.username;
+    vo.headPic = user.headPic;
+    vo.phoneNumber = user.phoneNumber;
+    vo.nickname = user.nickname;
+    vo.createTime = user.createTime;
+    vo.isFrozen = user.isFrozen;
+
+    return vo;
+  }
+
+  // 修改密码
+  async updatePassword(userId: number, passwordDto: updateUserPasswordDto) {
+    const captcha = await this.redisService.get(`update_password_captcha_${passwordDto.email}`);
+
+    if (!captcha) throw new HttpException('验证码已失效', HttpStatus.BAD_REQUEST);
+
+    if (passwordDto.captcha !== captcha) {
+      throw new HttpException('验证码不正确', HttpStatus.BAD_REQUEST);
+    }
+
+    const foundUser = await this.userRepository.findOneBy({
+      id: userId,
+    });
+
+    foundUser.password = md5(passwordDto.password);
+    try {
+      await this.userRepository.save(foundUser);
+      return '密码修改成功';
+    } catch (error) {
+      this.logger.error(error, UserService);
+      return '密码修改失败';
+    }
+  }
+
+  // 修改用户信息
+  async update(userId: number, updateUserDto: UpdateUserDto) {
+    const captcha = await this.redisService.get(`update_user_captcha_${updateUserDto.email}`);
+
+    if (!captcha) {
+      throw new HttpException('验证码已失效', HttpStatus.BAD_REQUEST);
+    }
+
+    if (updateUserDto.captcha !== captcha) {
+      throw new HttpException('验证码不正确', HttpStatus.BAD_REQUEST);
+    }
+
+    const foundUser = await this.userRepository.findOneBy({
+      id: userId,
+    });
+
+    if (updateUserDto.nickname) {
+      foundUser.nickname = updateUserDto.nickname;
+    }
+    if (updateUserDto.headPic) {
+      foundUser.headPic = updateUserDto.headPic;
+    }
+
+    try {
+      await this.userRepository.save(foundUser);
+      return '用户信息修改成功';
+    } catch (e) {
+      this.logger.error(e, UserService);
+      return '用户信息修改成功';
+    }
   }
 }

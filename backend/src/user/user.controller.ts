@@ -6,6 +6,9 @@ import { EmailService } from 'src/email/email.service';
 import { LoginUserDto } from './dto/login-user.dto';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { RequireLogin, UserInfo } from 'src/custom.decorator';
+import { updateUserPasswordDto } from './dto/update-user-password.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Controller('user')
 export class UserController {
@@ -181,5 +184,53 @@ export class UserController {
     } catch (e) {
       throw new UnauthorizedException('token 已失效，请重新登录');
     }
+  }
+
+  @Get('info')
+  @RequireLogin()
+  async info(@UserInfo('userId') userId: number) {
+    return await this.userService.findUserDetailById(userId);
+  }
+
+  @Post(['update_password', 'admin/update_password'])
+  @RequireLogin()
+  async updatePassword(@UserInfo('userId') userId: number, @Body() passwordDto: updateUserPasswordDto) {
+    return await this.userService.updatePassword(userId, passwordDto);
+  }
+
+  // 发送邮箱的验证码
+  @Get('update_password/captcha')
+  async updatePasswordCaptcha(@Query('address') address: string) {
+    const code = Math.random().toString().slice(2, 8);
+    await this.redisService.set(`update_password_captcha_${address}`, code, 5 * 60);
+
+    await this.emailService.sendMail({
+      to: address,
+      subject: '更改密码验证码',
+      html: `<p>你的更改密码的验证码是 ${code}</p>`,
+    });
+
+    return '发送成功';
+  }
+
+  // 修改用户信息
+  @Post(['update', 'admin/update'])
+  @RequireLogin()
+  async update(@UserInfo('userId') userId: number, @Body() updateUserDto: UpdateUserDto) {
+    return await this.userService.update(userId, updateUserDto);
+  }
+
+  @Get('update/captcha')
+  async updateCaptcha(@Query('address') address: string) {
+    const code = Math.random().toString().slice(2, 8);
+
+    await this.redisService.set(`update_user_captcha_${address}`, code, 5 * 60);
+
+    await this.emailService.sendMail({
+      to: address,
+      subject: '更改用户信息验证码',
+      html: `<p>你的验证码是 ${code}</p>`,
+    });
+    return '发送成功';
   }
 }
