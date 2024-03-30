@@ -4,6 +4,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { FormatResponseInterceptor } from './format-response.interceptor';
 import { InvokeRecordInterceptor } from './invoke-record.interceptor';
+import { CustomExceptionFilter } from './custom-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -13,6 +14,9 @@ async function bootstrap() {
 
   // 全局响应处理
   app.useGlobalInterceptors(new FormatResponseInterceptor());
+
+  // 自定义错误响应格式
+  app.useGlobalFilters(new CustomExceptionFilter());
 
   // 接口访问日志记录
   app.useGlobalInterceptors(new InvokeRecordInterceptor());

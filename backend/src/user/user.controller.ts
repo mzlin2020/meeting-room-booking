@@ -1,4 +1,15 @@
-import { Body, Controller, Post, Get, Query, Inject, UnauthorizedException } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Post,
+  Get,
+  Query,
+  Inject,
+  UnauthorizedException,
+  ParseIntPipe,
+  BadRequestException,
+  DefaultValuePipe,
+} from '@nestjs/common';
 import { UserService } from './user.service';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { RedisService } from 'src/redis/redis.service';
@@ -9,6 +20,7 @@ import { ConfigService } from '@nestjs/config';
 import { RequireLogin, UserInfo } from 'src/custom.decorator';
 import { updateUserPasswordDto } from './dto/update-user-password.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { generateParseIntPipe } from 'src/utils';
 
 @Controller('user')
 export class UserController {
@@ -232,5 +244,24 @@ export class UserController {
       html: `<p>你的验证码是 ${code}</p>`,
     });
     return '发送成功';
+  }
+
+  @Get('freeze')
+  async freeze(@Query('id') userId: number) {
+    await this.userService.freezeUserById(userId);
+    return 'suceess';
+  }
+
+  @Get('list')
+  async list(
+    @Query('pageNo', new DefaultValuePipe(1), generateParseIntPipe('pageNo'))
+    pageNo: number,
+    @Query('pageSize', new DefaultValuePipe(2), generateParseIntPipe('pageSize'))
+    pageSize: number,
+    @Query('username') username: string,
+    @Query('nickname') nickname: string,
+    @Query('email') email: string,
+  ) {
+    return await this.userService.findUserByPage(pageNo, pageSize, username, nickname, email);
   }
 }
