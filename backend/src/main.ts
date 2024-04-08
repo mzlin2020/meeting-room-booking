@@ -5,9 +5,15 @@ import { ConfigService } from '@nestjs/config';
 import { FormatResponseInterceptor } from './format-response.interceptor';
 import { InvokeRecordInterceptor } from './invoke-record.interceptor';
 import { CustomExceptionFilter } from './custom-exception.filter';
+import { NestExpressApplication } from '@nestjs/platform-express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // 将uoloads设置为静态资源
+  app.useStaticAssets('uploads', {
+    prefix: '/uploads',
+  });
 
   // 全局启用参数校验
   app.useGlobalPipes(new ValidationPipe());
@@ -20,6 +26,8 @@ async function bootstrap() {
 
   // 接口访问日志记录
   app.useGlobalInterceptors(new InvokeRecordInterceptor());
+
+  app.enableCors();
 
   const configService = app.get(ConfigService);
   await app.listen(configService.get('nest_server_port'));

@@ -169,6 +169,7 @@ export class UserService {
       id: user.id,
       username: user.username,
       isAdmin: user.isAdmin,
+      email: user.email,
       roles: user.roles.map((item) => item.name),
       permissions: user.roles.reduce((arr, item) => {
         item.permissions.forEach((permission) => {
@@ -202,7 +203,7 @@ export class UserService {
   }
 
   // 修改密码
-  async updatePassword(userId: number, passwordDto: updateUserPasswordDto) {
+  async updatePassword(passwordDto: updateUserPasswordDto) {
     const captcha = await this.redisService.get(`update_password_captcha_${passwordDto.email}`);
 
     if (!captcha) throw new HttpException('验证码已失效', HttpStatus.BAD_REQUEST);
@@ -212,8 +213,11 @@ export class UserService {
     }
 
     const foundUser = await this.userRepository.findOneBy({
-      id: userId,
+      username: passwordDto.username,
     });
+    if (foundUser.email !== passwordDto.email) {
+      throw new HttpException('邮箱不正确', HttpStatus.BAD_REQUEST);
+    }
 
     foundUser.password = md5(passwordDto.password);
     try {

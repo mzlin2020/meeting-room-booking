@@ -10,6 +10,8 @@ export class PermissionGuard implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean | Promise<boolean> | Observable<boolean> {
     const request: Request = context.switchToHttp().getRequest();
+
+    // 未登录不验证权限
     if (!request.user) return true;
 
     // 取出在验证登录的guard中存入的权限信息

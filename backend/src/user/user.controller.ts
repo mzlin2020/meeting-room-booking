@@ -6,9 +6,10 @@ import {
   Query,
   Inject,
   UnauthorizedException,
-  ParseIntPipe,
   BadRequestException,
   DefaultValuePipe,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { RegisterUserDto } from './dto/register-user.dto';
@@ -21,6 +22,9 @@ import { RequireLogin, UserInfo } from 'src/custom.decorator';
 import { updateUserPasswordDto } from './dto/update-user-password.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { generateParseIntPipe } from 'src/utils';
+import { FileInterceptor } from '@nestjs/platform-express';
+import * as path from 'path';
+import { storage } from 'src/my-file-storage';
 
 @Controller('user')
 export class UserController {
@@ -77,6 +81,7 @@ export class UserController {
       {
         userId: vo.userInfo.id,
         username: vo.userInfo.username,
+        email: vo.userInfo.email,
         roles: vo.userInfo.roles,
         permissions: vo.userInfo.permissions,
       },
@@ -106,6 +111,7 @@ export class UserController {
       {
         userId: vo.userInfo.id,
         username: vo.userInfo.username,
+        email: vo.userInfo.email,
         roles: vo.userInfo.roles,
         permissions: vo.userInfo.permissions,
       },
@@ -128,6 +134,7 @@ export class UserController {
   @Get('refresh')
   async refresh(@Query('refreshToken') refreshToken: string) {
     try {
+      console.log('refreshToken', refreshToken);
       const data = this.jwtService.verify(refreshToken);
       const user = await this.userService.findUserById(data.userId, false);
 
@@ -135,6 +142,7 @@ export class UserController {
         {
           userId: user.id,
           username: user.username,
+          email: user.email,
           roles: user.roles,
           permissions: user.permissions,
         },
@@ -172,6 +180,7 @@ export class UserController {
         {
           userId: user.id,
           username: user.username,
+          email: user.email,
           roles: user.roles,
           permissions: user.permissions,
         },
@@ -201,13 +210,14 @@ export class UserController {
   @Get('info')
   @RequireLogin()
   async info(@UserInfo('userId') userId: number) {
+    console.log('userId', userId);
+
     return await this.userService.findUserDetailById(userId);
   }
 
   @Post(['update_password', 'admin/update_password'])
-  @RequireLogin()
-  async updatePassword(@UserInfo('userId') userId: number, @Body() passwordDto: updateUserPasswordDto) {
-    return await this.userService.updatePassword(userId, passwordDto);
+  async updatePassword(@Body() passwordDto: updateUserPasswordDto) {
+    return await this.userService.updatePassword(passwordDto);
   }
 
   // 发送邮箱的验证码
@@ -232,8 +242,9 @@ export class UserController {
     return await this.userService.update(userId, updateUserDto);
   }
 
+  @RequireLogin()
   @Get('update/captcha')
-  async updateCaptcha(@Query('address') address: string) {
+  async updateCaptcha(@UserInfo('email') address: string) {
     const code = Math.random().toString().slice(2, 8);
 
     await this.redisService.set(`update_user_captcha_${address}`, code, 5 * 60);
@@ -263,5 +274,27 @@ export class UserController {
     @Query('email') email: string,
   ) {
     return await this.userService.findUserByPage(pageNo, pageSize, username, nickname, email);
+  }
+
+  @Post('upload')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      dest: 'uploads',
+      limits: {
+        fileSize: 1024 * 1024 * 3,
+      },
+      storage: storage,
+      fileFilter(req, file, callback) {
+        const extname = path.extname(file.originalname);
+        if (['.png', '.jpg', '.gif'].includes(extname)) {
+          callback(null, true);
+        } else {
+          callback(new BadRequestException('只能上传图片'), false);
+        }
+      },
+    }),
+  )
+  uploadFile(@UploadedFile() file: Express.Multer.File) {
+    return file.path;
   }
 }
