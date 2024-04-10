@@ -21,29 +21,6 @@ interface UserSearchResult {
     createTime: Date;
 }
 
-
-
-
-const data = [
-    {
-        key: '1',
-        username: 'xx',
-        headPic: 'xxx.png',
-        nickname: 'xxx',
-        email: 'xx@xx.com',
-        createTime: new Date()
-    },
-    {
-        key: '12',
-        username: 'yy',
-        headPic: 'yy.png',
-        nickname: 'yyy',
-        email: 'yy@yy.com',
-        createTime: new Date()
-    }
-]
-
-
 export function UserManage() {
 
     const [pageNo, setPageNo] = useState<number>(1)

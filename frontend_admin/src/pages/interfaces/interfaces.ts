@@ -1,5 +1,7 @@
 import { message } from "antd";
 import axios from "axios";
+import { UserInfo } from "../InfoModify/InfoModify";
+import { UpdatePassword } from "../PasswordModify/PasswordModify";
 
 const axiosInstance = axios.create({
   baseURL: "http://localhost:3005/",
@@ -80,10 +82,40 @@ export async function userSearch(
   });
 }
 
+// 冻结用户
 export async function freeze(id: number) {
   return await axiosInstance.get("/user/freeze", {
     params: {
       id,
     },
   });
+}
+
+// 获取用户信息
+export async function getUserInfo() {
+  return await axiosInstance.get("/user/info");
+}
+
+// 更新用户信息
+export async function updateInfo(data: UserInfo) {
+  return await axiosInstance.post("/user/admin/update", data);
+}
+
+// 获取验证码
+export async function updateUserInfoCaptcha() {
+  return await axiosInstance.get("/user/update/captcha");
+}
+
+// 密码更新验证码
+export async function updatePasswordCaptcha(email: string) {
+  return await axiosInstance.get("/user/update_password/captcha", {
+    params: {
+      address: email,
+    },
+  });
+}
+
+// 密码更新
+export async function updatePassword(data: UpdatePassword) {
+  return await axiosInstance.post("/user/admin/update_password", data);
 }
