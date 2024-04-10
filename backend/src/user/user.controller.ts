@@ -264,6 +264,7 @@ export class UserController {
   }
 
   @Get('list')
+  @RequireLogin()
   async list(
     @Query('pageNo', new DefaultValuePipe(1), generateParseIntPipe('pageNo'))
     pageNo: number,
