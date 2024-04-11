@@ -3,6 +3,7 @@ import { MettingRoomService } from './metting-room.service';
 import { generateParseIntPipe } from 'src/utils';
 import { CreateMeetingRoomDto } from './dto/create-metting-room.dto';
 import { UpdateMeetingRoomDto } from './dto/update-metting-room.dto';
+import { RequireLogin } from 'src/custom.decorator';
 
 @Controller('meeting-room')
 export class MettingRoomController {
@@ -40,6 +41,7 @@ export class MettingRoomController {
   }
 
   @Delete(':id')
+  @RequireLogin()
   async delete(@Param('id') id: number) {
     return await this.mettingRoomService.delete(id);
   }
