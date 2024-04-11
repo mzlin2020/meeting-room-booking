@@ -4,6 +4,8 @@ import { UserInfo } from "../InfoModify/InfoModify";
 import { UpdatePassword } from "../PasswordModify/PasswordModify";
 import { CreateMeetingRoom } from "../MeetingRoomManage/CreateMeetingRoomModal";
 import { UpdateMeetingRoom } from "../MeetingRoomManage/UpdateMeetingRoom";
+import { SearchBooking } from "../BookingManage/BookingManage";
+import dayjs from "dayjs";
 
 const axiosInstance = axios.create({
   baseURL: "http://localhost:3005/",
@@ -163,4 +165,61 @@ export async function updateMeetingRoom(meetingRoom: UpdateMeetingRoom) {
 // 查找会议室
 export async function findMeetingRoom(id: number) {
   return await axiosInstance.get("/meeting-room/" + id);
+}
+
+export async function bookingList(
+  searchBooking: SearchBooking,
+  pageNo: number,
+  pageSize: number
+) {
+  let bookingTimeRangeStart;
+  let bookingTimeRangeEnd;
+
+  if (searchBooking.rangeStartDate && searchBooking.rangeStartTime) {
+    const rangeStartDateStr = dayjs(searchBooking.rangeStartDate).format(
+      "YYYY-MM-DD"
+    );
+    const rangeStartTimeStr = dayjs(searchBooking.rangeStartTime).format(
+      "HH:mm"
+    );
+    bookingTimeRangeStart = dayjs(
+      rangeStartDateStr + " " + rangeStartTimeStr
+    ).valueOf();
+  }
+
+  if (searchBooking.rangeEndDate && searchBooking.rangeEndTime) {
+    const rangeEndDateStr = dayjs(searchBooking.rangeEndDate).format(
+      "YYYY-MM-DD"
+    );
+    const rangeEndTimeStr = dayjs(searchBooking.rangeEndTime).format("HH:mm");
+    bookingTimeRangeEnd = dayjs(
+      rangeEndDateStr + " " + rangeEndTimeStr
+    ).valueOf();
+  }
+
+  return await axiosInstance.get("/booking/list", {
+    params: {
+      username: searchBooking.username,
+      meetingRoomName: searchBooking.meetingRoomName,
+      meetingRoomPosition: searchBooking.meetingRoomPosition,
+      bookingTimeRangeStart,
+      bookingTimeRangeEnd,
+      pageNo: pageNo,
+      pageSize: pageSize,
+    },
+  });
+}
+
+// 批准预订
+export async function apply(id: number) {
+  return await axiosInstance.get("/booking/apply/" + id);
+}
+
+// 取消预订
+export async function reject(id: number) {
+  return await axiosInstance.get("/booking/reject/" + id);
+}
+// 解除预订
+export async function unbind(id: number) {
+  return await axiosInstance.get("/booking/unbind/" + id);
 }
