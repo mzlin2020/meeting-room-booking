@@ -4,7 +4,7 @@ import { generateParseIntPipe } from 'src/utils';
 import { CreateMeetingRoomDto } from './dto/create-metting-room.dto';
 import { UpdateMeetingRoomDto } from './dto/update-metting-room.dto';
 
-@Controller('metting-room')
+@Controller('meeting-room')
 export class MettingRoomController {
   constructor(private readonly mettingRoomService: MettingRoomService) {}
 

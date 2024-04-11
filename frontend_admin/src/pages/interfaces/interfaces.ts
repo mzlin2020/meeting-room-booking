@@ -2,6 +2,8 @@ import { message } from "antd";
 import axios from "axios";
 import { UserInfo } from "../InfoModify/InfoModify";
 import { UpdatePassword } from "../PasswordModify/PasswordModify";
+import { CreateMeetingRoom } from "../MeetingRoomManage/CreateMeetingRoomModal";
+import { UpdateMeetingRoom } from "../MeetingRoomManage/UpdateMeetingRoom";
 
 const axiosInstance = axios.create({
   baseURL: "http://localhost:3005/",
@@ -25,16 +27,20 @@ axiosInstance.interceptors.response.use(
     return response;
   },
   async (error) => {
-    let { data, config } = error.response;
+    let { data, config } = error.response || {};
 
-    if (data.code === 401 && !config.url.includes("/user/admin/refresh")) {
+    if (
+      data &&
+      data.code === 401 &&
+      !config.url.includes("/user/admin/refresh")
+    ) {
       const res = await refreshToken();
 
-      if (res.status === 200) {
+      if (res?.status === 200) {
         config.headers.authorization = "Bearer " + res.data.data.access_token;
         return axios(config);
       } else {
-        message.error(res.data);
+        message.error(res?.data || "未知错误");
 
         setTimeout(() => {
           window.location.href = "/login";
@@ -118,4 +124,43 @@ export async function updatePasswordCaptcha(email: string) {
 // 密码更新
 export async function updatePassword(data: UpdatePassword) {
   return await axiosInstance.post("/user/admin/update_password", data);
+}
+
+// 获取会议室列表
+export async function meetingRoomList(
+  name: string,
+  capacity: number,
+  equipment: string,
+  pageNo: number,
+  pageSize: number
+) {
+  return await axiosInstance.get("/meeting-room/list", {
+    params: {
+      name,
+      capacity,
+      equipment,
+      pageNo,
+      pageSize,
+    },
+  });
+}
+
+// 删除会议室
+export async function deleteMeetingRoom(id: number) {
+  return await axiosInstance.delete("/meeting-room/" + id);
+}
+
+// 添加会议室
+export async function createMeetingRoom(meetingRoom: CreateMeetingRoom) {
+  return await axiosInstance.post("/meeting-room/create", meetingRoom);
+}
+
+// 更新会议室信息
+export async function updateMeetingRoom(meetingRoom: UpdateMeetingRoom) {
+  return await axiosInstance.post("/meeting-room/update", meetingRoom);
+}
+
+// 查找会议室
+export async function findMeetingRoom(id: number) {
+  return await axiosInstance.get("/meeting-room/" + id);
 }
